@@ -9,6 +9,9 @@ int main(int ac, char **av) {
 
 	try {
 		Options opt = parser.parse_args();
+		for (size_t i = 0; i < opt.c_flags.size(); ++i) {
+			std::cout << opt.c_flags[i] << std::endl;
+		}
 		mk.initmk(opt);
 	} catch (std::runtime_error &e) {
 		std::cout << e.what() << std::endl;
