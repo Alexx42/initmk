@@ -9,18 +9,21 @@
 
 class Parser {
 public:
-    Parser(int ac, char **av);
-    ~Parser();
+	Parser(int ac, char **av);
+	~Parser();
 
-    Options parse_args();
+	Options parse_args();
 
 private:
 
-    void    set_flags_(Options& opt);
-    void separate_tokens(Options& opt);
+	void c_flag_(Options& opt, uint8_t i);
+	void f_flag_(Options& opt, uint8_t i);
+	void s_flag_(Options& opt, uint8_t i);
+	void set_flags_(Options& opt);
+	void separate_tokens_(Options& opt);
 
-    std::vector<std::string> av_;
-    std::set<std::string> opt_;
+	std::vector<std::string> av_;
+	std::set<std::string> opt_;
 };
 
 #endif
