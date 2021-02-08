@@ -1,7 +1,7 @@
 #include "../inc/options.h"
 
 
-Options::Options() : flags(0x00) { ; }
+Options::Options() : flags(0x00), lg(Unknown) { ; }
 
 Options::~Options() { ; }
 

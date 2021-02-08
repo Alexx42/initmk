@@ -14,6 +14,12 @@
 
 struct Options {
 
+	enum C_CXX {
+		C,
+		CXX,
+		Unknown,
+	};
+
 	Options();
 	~Options();
 
@@ -35,6 +41,7 @@ struct Options {
 	*/
 	uint8_t flags;
 
+	C_CXX lg;
 	std::string name;
 	std::string compiler;
 	std::vector<std::string> sources;
@@ -43,6 +50,8 @@ struct Options {
 	static const uint8_t MAX_FLAGS = 3;
 	static constexpr char OPT[3] {'s', 'c', 'f'};
 	inline static const std::string COMPILER[5] = {"gcc", "g++", "clang", "clang++"};
+
+
 
 	static bool is_opt(char c) { for (auto x: OPT) if (x == c) { return true; } return false; }
 	static bool is_compiler(std::string s) {for (auto str: COMPILER) if (str == s) { return true; } return false; }

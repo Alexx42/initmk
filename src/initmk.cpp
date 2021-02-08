@@ -25,8 +25,10 @@ void Initmk::set_compiler_variables_() {
 	}
 	if (opt_->compiler == "clang" || opt_->compiler == "gcc") {
 		variables_.push_back({"CFLAGS", flags});
+		opt_->lg = Options::C;
 	} else {
 		variables_.push_back({"CXXFLAGS", flags});
+		opt_->lg = Options::CXX;
 	}
 }
 
@@ -51,24 +53,58 @@ void Initmk::write_makefile_() const {
 
 void Initmk::verify_sources_() const {
 	std::string current_path;
-	if (!(opt_->is_s_set())) {
-		return ;
-	}
+
 	current_path = std::filesystem::current_path().string();
 	struct stat buffer{};
 
 	for (auto& file : opt_->sources) {
-		if (stat((current_path.append('/' + file)).c_str(), &buffer) != 0) {
+		if (stat((current_path + '/' + file).c_str(), &buffer) != 0) { // NOLINT(performance-inefficient-string-concatenation)
 			throw std::runtime_error("Could not find the following file: " + file);
+		}
+	}
+	if (opt_->lg == Options::C) {
+		for (auto& file : opt_->sources) {
+			if (file.substr(file.size() - 3) != ".c") {
+				throw std::runtime_error("Impossible to compile the following file: " + file + " under " + opt_->compiler);
+			}
+		}
+	}
+}
+
+void Initmk::find_sources_(const std::string& path) {
+	std::string p;
+	for (auto& entry : std::filesystem::directory_iterator(path)) {
+		if (entry.is_directory() && is_sources_directory(entry.path().string().substr(path.size() + 1))) {
+			for (auto& files : std::filesystem::directory_iterator(entry.path().string())) {
+				if (!files.is_regular_file()) {
+					continue ;
+				}
+				p = files.path().string();
+				if (type_file(p) == Options::C) {
+					if (opt_->lg == Options::Unknown) { opt_->lg = Options::C; }
+					opt_->sources.push_back(p);
+				} else if (type_file(p) == Options::CXX) {
+					if (opt_->lg == Options::Unknown) { opt_->lg = Options::CXX; }
+					opt_->sources.push_back(p);
+				}
+			}
+			find_sources_(entry.path().string());
 		}
 	}
 }
 
 void Initmk::initmk(Options& opt) {
 	opt_ = &opt;
+	set_variables_();
 	try {
-		verify_sources_();
-		set_variables_();
+		if (opt.is_s_set()) {
+			verify_sources_();
+		} else {
+			find_sources_(std::filesystem::current_path().string());
+			for (auto& src: opt_->sources) {
+				std::cout << src << std::endl;
+			}
+		}
 		write_makefile_();
 	} catch (std::runtime_error& e) {
 		throw e;
