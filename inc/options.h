@@ -14,7 +14,6 @@
 
 struct Options {
 
-
 	Options();
 	~Options();
 
@@ -38,6 +37,7 @@ struct Options {
 
 	std::string name;
 	std::string compiler;
+	std::vector<std::string> sources;
 	std::vector<std::string> c_flags;
 
 	static const uint8_t MAX_FLAGS = 3;

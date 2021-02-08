@@ -13,42 +13,48 @@ Parser::~Parser() {
 }
 
 
-void Parser::c_flag_(Options& opt, uint8_t i) {
+void Parser::c_flag_(Options& opt, size_t& i) {
 	if (i >= av_.size() - 1) {
 		throw std::runtime_error("usage: ./initmk <NAME> -c <COMPILER> -s <SOURCES FILES>.");
 	} else if (!Options::is_compiler(av_[i + 1])) {
 		throw std::runtime_error("invalid compiler name.");
 	}
-	opt.compiler = av_[i + 1];
+	++i;
+	opt.compiler = av_[i];
 }
 
-void Parser::f_flag_(Options& opt, uint8_t i) {
+void Parser::f_flag_(Options& opt, size_t& i) {
 	if (i >= av_.size() - 1) {
 		throw std::runtime_error(USAGE);
 	}
+	++i;
 	uint8_t j = 0, n_letter = 0;
-	while (j < av_[i + 1].size()) {
+	while (j < av_[i].size()) {
 		n_letter = 0;
-		while (j < av_[i + 1].size() && isspace(av_[i + 1][j])) {
+		while (j < av_[i].size() && isspace(av_[i][j])) {
 			++j;
 		}
-		while (j < av_[i + 1].size() && !isspace(av_[i + 1][j])) {
+		while (j < av_[i].size() && !isspace(av_[i][j])) {
 			++j;
 			++n_letter;
 		}
-		opt.c_flags.push_back(av_[i + 1].substr(j - n_letter, n_letter));
+		opt.c_flags.push_back(av_[i].substr(j - n_letter, n_letter));
 	}
 }
 
-void Parser::s_flag_(Options& opt, uint8_t i) {
-	(void)opt;
-	(void)i;
+void Parser::s_flag_(Options& opt, size_t& i) {
+	if (i >= av_.size() - 1) {
+		throw std::runtime_error(USAGE);
+	}
+	while (++i < av_.size() && av_[i][0] != '-') {
+		opt.sources.push_back(av_[i]);
+	}
 }
 
 void Parser::separate_tokens_(Options& opt) {
-	uint8_t i;
+	size_t i;
 
-	if (av_.size() == 0 || av_[0][0] == '-') {
+	if (av_.empty() || av_[0][0] == '-') {
 		throw std::runtime_error(USAGE);
 	}
 	opt.name = av_[0];

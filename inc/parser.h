@@ -6,6 +6,7 @@
 #include <string>
 #include <set>
 #include <algorithm>
+#include <filesystem>
 
 class Parser {
 public:
@@ -16,11 +17,12 @@ public:
 
 private:
 
-	void c_flag_(Options& opt, uint8_t i);
-	void f_flag_(Options& opt, uint8_t i);
-	void s_flag_(Options& opt, uint8_t i);
+	void c_flag_(Options& opt, size_t& i);
+	void f_flag_(Options& opt, size_t& i);
+	void s_flag_(Options& opt, size_t& i);
 	void set_flags_(Options& opt);
 	void separate_tokens_(Options& opt);
+
 
 	std::vector<std::string> av_;
 	std::set<std::string> opt_;

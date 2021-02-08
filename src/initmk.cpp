@@ -29,7 +29,7 @@ void Initmk::initmk(Options& opt) {
 	opt_ = &opt;
 
 	set_variables_();
-	for (auto x: variables_) {
+	for (auto& x: variables_) {
 		std::cout << x.name << " = " << x.value << std::endl;
 	}
 }
