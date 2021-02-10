@@ -9,19 +9,15 @@ CXXFLAGS += -Wall -Werror -Wextra -std=c++2a
 SRC = main.cpp options.cpp parser.cpp initmk.cpp
 OBJ = $(addprefix $(OBJ_PREFIX), $(SRC:.cpp=.o))
 
-all: $(CREATE_OBJ) $(INITMK)
-
-$(OBJ_PREFIX)/%.o: %.c
-	$(CXX) $(CXXFLAGS) -c $< -o $^
+all: $(INITMK)
 
 $(INITMK): $(OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 $(OBJ): $(OBJ_PREFIX)%.o: $(SRC_PREFIX)%.cpp
+	@mkdir -p $(OBJ_PREFIX)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-create_obj:
-	@mkdir -p $(OBJ_PREFIX)
 
 clean:
 	@rm -f $(OBJ_PREFIX)/*.o
