@@ -3,7 +3,7 @@
 
 #include <string>
 
-struct variable {
+struct Variable {
     std::string name;
     std::string value;
 };

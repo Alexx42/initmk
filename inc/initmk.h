@@ -6,14 +6,26 @@
 #include <fstream>
 #include <filesystem>
 #include <sys/stat.h>
+#include <numeric>
+#include <map>
+#include <utility>
 
 #include "rules.h"
 #include "variable.h"
 #include "options.h"
 
 #define MAKEFILE "MKFL"
+#define SRC_VAR "SRC"
+#define OBJ_VAR "OBJ"
+#define OBJ_DIR "obj"
+#define OBJECT_OPTION "-c"
+#define RENAME_OPTION "-o"
+#define TARGET "$^"
+#define FIRST_PREREQUISITE "$<"
 
 #define OPEN_ERROR "An error occured while opening the file."
+
+
 
 class Initmk {
 public:
@@ -21,7 +33,6 @@ public:
 	~Initmk();
 	
 	void initmk(Options& opt);
-
 
 private:
 
@@ -45,8 +56,15 @@ private:
 	void verify_sources_() const;
 	void find_sources_(const std::string& path);
 
-	std::vector<rules> rules_;
-	std::vector<variable> variables_;
+	void create_rules_();
+
+	void make_clean_rule();
+
+	std::vector<Rule> rules_;
+	std::vector<Variable> variables_;
+
+	std::string compiler_variable;
+	std::string flags_variable;
 
 	Options* opt_;
 };
