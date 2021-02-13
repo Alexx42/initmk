@@ -13,8 +13,9 @@
 #include "rules.h"
 #include "variable.h"
 #include "options.h"
+#include "files.h"
 
-#define MAKEFILE "MKFL"
+#define MAKEFILE "Mkfl"
 #define SRC_VAR "SRC"
 #define OBJ_VAR "OBJ"
 #define OBJ_DIR "obj"
@@ -36,17 +37,7 @@ public:
 
 private:
 
-	inline static const std::string SRC_DIRECTORY[5] = {"src", "srcs", "sources", "source"};
 
-	inline static Options::C_CXX type_file(const std::string& file_name) {
-		if (file_name.substr(file_name.size() - 3) == ".c") {
-			return Options::C;
-		} else if (file_name.substr(file_name.size() - 4) == ".cpp") {
-			return Options::CXX;
-		}
-		return Options::Unknown;
-	}
-	static bool is_sources_directory(std::string s) {for (auto str: SRC_DIRECTORY) if (str == s) { return true; } return false; }
 
 	void set_variables_();
 	void set_compiler_variables_();
@@ -54,7 +45,6 @@ private:
 	void write_makefile_() const;
 
 	void verify_sources_() const;
-	void find_sources_(const std::string& path);
 
 	void create_rules_();
 
@@ -63,8 +53,12 @@ private:
 	std::vector<Rule> rules_;
 	std::vector<Variable> variables_;
 
-	std::string compiler_variable;
-	std::string flags_variable;
+	std::string compiler_variable_;
+	std::string flags_variable_;
+
+	std::string path_;
+
+	Files files_;
 
 	Options* opt_;
 };

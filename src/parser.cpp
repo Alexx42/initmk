@@ -28,7 +28,7 @@ void Parser::f_flag_(Options& opt, size_t& i) {
 		throw std::runtime_error(USAGE);
 	}
 	++i;
-	uint8_t j = 0, n_letter = 0;
+	uint8_t j = 0, n_letter;
 	while (j < av_[i].size()) {
 		n_letter = 0;
 		while (j < av_[i].size() && isspace(av_[i][j])) {

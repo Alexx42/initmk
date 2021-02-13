@@ -1,7 +1,7 @@
 #ifndef _PARSER_H
 # define _PARSER_H
 
-#include "options.h"
+#include "../inc/options.h"
 #include <vector>
 #include <string>
 #include <set>

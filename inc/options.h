@@ -54,7 +54,7 @@ struct Options {
 
 
 	static bool is_opt(char c) { for (auto x: OPT) if (x == c) { return true; } return false; }
-	static bool is_compiler(std::string s) {for (auto str: COMPILER) if (str == s) { return true; } return false; }
+	static bool is_compiler(const std::string& s) {for (auto str: COMPILER) if (str == s) { return true; } return false; }
 };
 
 #endif

@@ -1,8 +1,8 @@
 #include "../inc/initmk.h"
 
-Initmk::Initmk()  {
-	;
-} 
+Initmk::Initmk() : opt_(nullptr) {
+	path_ = std::filesystem::current_path().string();
+}
 
 Initmk::~Initmk() {
 	;
@@ -11,21 +11,24 @@ Initmk::~Initmk() {
 void Initmk::set_compiler_variables_() {
 	std::string flags;
 
-	if (opt_->is_c_set()) {
-		std::string name;
-		if (opt_->compiler == "clang" || opt_->compiler == "gcc") {
-			name = "CC";
-		} else {
-			name = "CXX";
+	if (opt_->lg == Options::C) {
+		if (opt_->compiler.empty()) {
+			opt_->compiler = "gcc";
 		}
-		variables_.push_back({name, opt_->compiler});
-	}
-	for (auto& f: opt_->c_flags) {
-		flags += f + ' ';
+		variables_.push_back({"CC", opt_->compiler});
+	} else {
+		if (opt_->compiler.empty()) {
+			opt_->compiler = "g++";
+		}
+		variables_.push_back({"CXX", opt_->compiler});
 	}
 	if (!(opt_->is_f_set())) { return; }
 
-	if (opt_->compiler == "clang" || opt_->compiler == "gcc") {
+	for (auto& f: opt_->c_flags) {
+		flags += f + ' ';
+	}
+
+	if (opt_->lg == Options::C) {
 		variables_.push_back({"CFLAGS", flags});
 		opt_->lg = Options::C;
 	} else {
@@ -35,11 +38,11 @@ void Initmk::set_compiler_variables_() {
 }
 
 template<class InputIt, class T>
-constexpr // since C++20
+constexpr
 T p_accumulate(InputIt first, InputIt last, T init)
 {
 	for (; first != last; ++first) {
-		init = std::move(init) + *first + ' '; // std::move since C++20
+		init = std::move(init) + *first + ' ';
 	}
 	return init;
 }
@@ -47,11 +50,15 @@ T p_accumulate(InputIt first, InputIt last, T init)
 void Initmk::set_variables_() {
 	variables_.push_back({"NAME", opt_->name});
 
-	Variable sources;
+	set_compiler_variables_();
 
-	sources.name = SRC_VAR;
-	sources.value = p_accumulate(opt_->sources.begin(), opt_->sources.end(), std::string{});
-	variables_.push_back(sources);
+	Variable source;
+
+	const std::vector<std::string>& sources = files_.get_sources();
+
+	source.name = SRC_VAR;
+	source.value = p_accumulate(sources.begin(), sources.end(), std::string{});
+	variables_.push_back(source);
 
 	Variable object;
 
@@ -69,7 +76,15 @@ void Initmk::set_variables_() {
 	object_dir.value = OBJ_DIR;
 	variables_.push_back(object_dir);
 
-	set_compiler_variables_();
+	Variable include;
+
+	const std::vector<std::string>& includes = files_.get_includes();
+
+	include.name = "INCLUDES";
+	include.value = p_accumulate(includes.begin(), includes.end(), std::string{});
+	variables_.push_back(include);
+
+
 }
 
 void Initmk::write_makefile_() const {
@@ -93,6 +108,7 @@ void Initmk::write_makefile_() const {
 		for (const auto& command : rule.commands) {
 			file << "\t" << command << "\n";
 		}
+		file << "\n";
 	}
 	file.close();
 }
@@ -138,58 +154,69 @@ void Initmk::verify_sources_() const {
 	}
 }
 
-void Initmk::find_sources_(const std::string& path) {
-	std::string p;
-	for (auto& entry : std::filesystem::directory_iterator(path)) {
-		if (entry.is_directory() && is_sources_directory(entry.path().string().substr(path.size() + 1))) {
-			for (auto& files : std::filesystem::directory_iterator(entry.path().string())) {
-				if (!files.is_regular_file()) {
-					continue ;
-				}
-				p = files.path().string();
-				if (type_file(p) == Options::C) {
-					if (opt_->lg == Options::Unknown) { opt_->lg = Options::C; }
-					opt_->sources.push_back(p);
-				} else if (type_file(p) == Options::CXX) {
-					if (opt_->lg == Options::Unknown) { opt_->lg = Options::CXX; }
-					opt_->sources.push_back(p);
-				}
-			}
-			find_sources_(entry.path().string());
-		}
-	}
-}
 
 void Initmk::make_clean_rule() {
 
 }
 
 void Initmk::create_rules_() {
+	Rule all;
+
+	all.name = "all";
+	all.dependencies.emplace_back("$(NAME)");
+
+	rules_.push_back(all);
+
 	Rule recompile;
 
-	recompile.name = "$(OBJ_DIR)/%.o";
-	recompile.dependencies.emplace_back("%.c");
-	recompile.commands.emplace_back(compiler_variable + " " + flags_variable + " " +
+	recompile.name = "$(OBJ)";
+	if (opt_->lg == Options::C) {
+		recompile.dependencies.emplace_back("$(OBJ_DIR)/%.o : %.c");
+	} else {
+		recompile.dependencies.emplace_back("$(OBJ_DIR)/%.o : %.cpp");
+	}
+	recompile.commands.emplace_back("@mkdir -p $(OBJ_DIR)");
+	recompile.commands.emplace_back(compiler_variable_ + " -I $(INCLUDES) " + flags_variable_ + " " +
 	OBJECT_OPTION + " " + FIRST_PREREQUISITE + " " + RENAME_OPTION + " " + TARGET);
 
 	rules_.push_back(recompile);
+
+	Rule name;
+
+	name.name = "$(NAME)";
+	name.dependencies.emplace_back(std::string("$(") + OBJ_VAR + ")");
+	name.commands.emplace_back(compiler_variable_ + " -I $(INCLUDES) " + flags_variable_ + " " + RENAME_OPTION + " $@ " + TARGET);
+
+	rules_.push_back(name);
+
+	Rule clean;
+
+	clean.name = "clean";
+	clean.commands.emplace_back(std::string("@rm -f $(") + OBJ_DIR + ")/*.o");
+	clean.commands.emplace_back(std::string("@rm -f $(NAME)"));
+
+	rules_.push_back(clean);
+
+
 }
 
 void Initmk::initmk(Options& opt) {
 	opt_ = &opt;
-	set_variables_();
 	try {
 		if (opt.is_s_set()) {
 			verify_sources_();
+			files_.set_sources(opt_->sources);
 		} else {
-			find_sources_(std::filesystem::current_path().string());
+			files_.get_all_sources_files(std::filesystem::current_path().string());
 		}
+		files_.get_all_include_directories(path_);
+		set_variables_();
 		if (opt_->lg == Options::C) {
-			compiler_variable = "$(CC)";
-			flags_variable = "$(CFLAGS)";
+			compiler_variable_ = "$(CC)";
+			flags_variable_ = "$(CFLAGS)";
 		} else {
-			compiler_variable = "$(CXX)";
-			flags_variable = "$(CXXFLAGS)";
+			compiler_variable_ = "$(CXX)";
+			flags_variable_ = "$(CXXFLAGS)";
 		}
 		create_rules_();
 		write_makefile_();
