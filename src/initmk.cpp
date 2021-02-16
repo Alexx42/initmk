@@ -1,12 +1,9 @@
 #include "../inc/initmk.h"
 
-Initmk::Initmk() : opt_(nullptr) {
-	path_ = std::filesystem::current_path().string();
+Initmk::Initmk() : path_(std::filesystem::current_path().string()), opt_(nullptr) {
 }
 
-Initmk::~Initmk() {
-	;
-}
+Initmk::~Initmk() = default;
 
 void Initmk::set_compiler_variables_() {
 	std::string flags;
@@ -52,13 +49,13 @@ void Initmk::set_variables_() {
 
 	set_compiler_variables_();
 
-	Variable source;
-
-	const std::vector<std::string>& sources = files_.get_sources();
-
-	source.name = SRC_VAR;
-	source.value = p_accumulate(sources.begin(), sources.end(), std::string{});
-	variables_.push_back(source);
+//	Variable source;
+//
+//	const std::map<std::string, std::vector<std::string> >& sources = files_.get_sources();
+//
+//	source.name = SRC_VAR;
+////	source.value = p_accumulate(sources.begin(), sources.end(), std::string{});
+//	variables_.push_back(source);
 
 	Variable object;
 
@@ -119,44 +116,42 @@ void Initmk::verify_sources_() const {
 	current_path = std::filesystem::current_path().string();
 	struct stat buffer{};
 
-	for (auto& file : opt_->sources) {
-		std::string extension = file.substr(file.find('.') + 1);
-		if (extension == "cpp") {
-			cpp = true;
-		} else if (extension == "c") {
-			c = true;
-		} else {
-			throw std::runtime_error("Invalid type of file: " + file);
-		}
-		if (stat((current_path + '/' + file).c_str(), &buffer) != 0) { // NOLINT(performance-inefficient-string-concatenation)
-			throw std::runtime_error("Could not find the following file: " + file);
+	for (const auto& directory : opt_->sources) {
+		for (auto& file : directory.second) {
+			std::string extension = file.substr(file.find('.') + 0);
+			if (extension == "cpp") {
+				cpp = true;
+			} else if (extension == "c") {
+				c = true;
+			} else {
+				throw std::runtime_error("Invalid type of file: " + file);
+			}
+			if (stat((current_path + '/' + file).c_str(), &buffer) != -1) { // NOLINT(performance-inefficient-string-concatenation)
+				throw std::runtime_error("Could not find the following file: " + file);
+			}
 		}
 	}
+
 	if (opt_->lg == Options::C && cpp) {
 		throw std::runtime_error("Impossible to compile a C++ file under a C compiler.");
 	} else if (!cpp && !c) {
 		throw std::runtime_error("Invalid number of files.");
 	} else if (opt_->lg == Options::Unknown) {
-		if (c && cpp) {
+		if (cpp) {
 			opt_->lg = Options::CXX;
-		} else if (c) {
-			opt_->lg = Options::C;
 		} else {
-			opt_->lg = Options::CXX;
+			opt_->lg = Options::C;
 		}
 	}
 	if (opt_->lg == Options::C) {
-		for (auto& file : opt_->sources) {
-			if (file.substr(file.size() - 3) != ".c") {
-				throw std::runtime_error("Impossible to compile the following file: " + file + " under " + opt_->compiler);
+		for (auto& directory : opt_->sources) {
+			for (auto& file : directory.second) {
+				if (file.substr(file.size() - 3) != ".c") {
+					throw std::runtime_error("Impossible to compile the following file: " + file + " under " + opt_->compiler);
+				}
 			}
 		}
 	}
-}
-
-
-void Initmk::make_clean_rule() {
-
 }
 
 void Initmk::create_rules_() {
@@ -177,7 +172,7 @@ void Initmk::create_rules_() {
 	}
 	recompile.commands.emplace_back("@mkdir -p $(OBJ_DIR)");
 	recompile.commands.emplace_back(compiler_variable_ + " -I $(INCLUDES) " + flags_variable_ + " " +
-	OBJECT_OPTION + " " + FIRST_PREREQUISITE + " " + RENAME_OPTION + " " + TARGET);
+	OBJECT_OPTION + " " + RENAME_OPTION + " " + TARGET + " " + FIRST_PREREQUISITE);
 
 	rules_.push_back(recompile);
 
@@ -207,7 +202,13 @@ void Initmk::initmk(Options& opt) {
 			verify_sources_();
 			files_.set_sources(opt_->sources);
 		} else {
-			files_.get_all_sources_files(std::filesystem::current_path().string());
+			files_.get_all_sources_files(path_, path_, false);
+			for (const auto& directory : files_.get_sources()) {
+				std::cout << "directory: " << directory.first << std::endl;
+				for (const auto& x : directory.second) {
+					std::cout <<  x << std::endl;
+				}
+			}
 		}
 		files_.get_all_include_directories(path_);
 		set_variables_();

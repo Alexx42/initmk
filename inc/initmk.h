@@ -21,11 +21,12 @@
 #define OBJ_DIR "obj"
 #define OBJECT_OPTION "-c"
 #define RENAME_OPTION "-o"
-#define TARGET "$^"
+#define TARGET "$@"
 #define FIRST_PREREQUISITE "$<"
 
 #define OPEN_ERROR "An error occured while opening the file."
 
+typedef std::vector<std::string> StringList;
 
 
 class Initmk {

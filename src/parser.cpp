@@ -47,7 +47,7 @@ void Parser::s_flag_(Options& opt, size_t& i) {
 		throw std::runtime_error(USAGE);
 	}
 	while (++i < av_.size() && av_[i][0] != '-') {
-		opt.sources.push_back(av_[i]);
+		opt.sources[""].push_back(av_[i]);
 	}
 }
 

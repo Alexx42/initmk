@@ -5,12 +5,15 @@
 #include <set>
 #include <iostream>
 #include <vector>
+#include <map>
 
 # define S_FLAG 0x02
 # define C_FLAG 0x03
 # define F_FLAG 0x04
 
 # define USAGE "usage: ./initmk <name> -c <compiler> -f <flags> -s <sources>"
+
+typedef std::vector<std::string> StringList;
 
 struct Options {
 
@@ -44,7 +47,7 @@ struct Options {
 	C_CXX lg;
 	std::string name;
 	std::string compiler;
-	std::vector<std::string> sources;
+	std::map<std::string, StringList> sources;
 	std::vector<std::string> c_flags;
 
 	static const uint8_t MAX_FLAGS = 3;

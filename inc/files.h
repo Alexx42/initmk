@@ -11,7 +11,7 @@ public:
 	Files() {;}
 	~Files() {;}
 
-	const std::vector<std::string> get_sources() const {
+	const std::map<std::string, StringList> get_sources() const {
 		return sources_;
 	}
 
@@ -19,26 +19,35 @@ public:
 		return includes_;
 	}
 
-	void set_sources(std::vector<std::string>& sources) {
+	void set_sources(std::map<std::string, StringList>& sources) {
 		sources_ = sources;
 	}
 
-	void get_all_sources_files(const std::string& path) {
-		std::string p;
+	void get_all_sources_files(const std::string& initial_path, const std::string& path, bool in_src) {
+		std::string directory, src;
+
 		for (auto& entry : std::filesystem::directory_iterator(path)) {
-			if (entry.is_directory() && is_sources_directory(entry.path().string().substr(path.size() + 1))) {
+			if (entry.is_directory() && ((is_sources_directory(entry.path().string().substr(path.size() + 1))) || in_src)) {
+				directory = entry.path().string().substr(initial_path.size() + 1);
 				for (auto& files : std::filesystem::directory_iterator(entry.path().string())) {
 					if (!files.is_regular_file()) {
 						continue ;
 					}
-					p = files.path().string();
-					if (type_file(p) == Options::C) {
-						sources_.push_back(p);
-					} else if (type_file(p) == Options::CXX) {
-						sources_.push_back(p);
+					std::size_t pos = files.path().string().rfind('/');
+					if (pos == std::string::npos) {
+						throw std::runtime_error("invalid path");
+					} try {
+						src = files.path().string().substr(pos + 1);
+					} catch (std::out_of_range& e) {
+
+					}
+					if (type_file(src) == Options::C) {
+						sources_[directory].push_back(src);
+					} else if (type_file(src) == Options::CXX) {
+						sources_[directory].push_back(src);
 					}
 				}
-				get_all_sources_files(entry.path().string());
+				get_all_sources_files(initial_path, entry.path().string(), true);
 			}
 		}
 	}
@@ -71,7 +80,7 @@ private:
 	inline static const std::string SRC_DIRECTORY[4] = {"src", "srcs", "sources", "source"};
 	inline static const std::string INCLUDE_DIRECTORY[3] = {"inc", "include", "includes"};
 
-	std::vector<std::string> sources_;
+	std::map<std::string, StringList> sources_;
 	std::vector<std::string> includes_;
 };
 
